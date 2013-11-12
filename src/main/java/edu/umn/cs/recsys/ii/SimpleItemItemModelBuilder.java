@@ -23,10 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author <a href="http://www.grouplens.org">GroupLens Research</a>
@@ -58,26 +55,59 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         for(Long i : items)
         {
             MutableSparseVector similarities = itemSimilarities.get(i);
+            ImmutableSparseVector vectorI = itemVectors.get(i);
             for(Long j : items)
             {
                 if(i == j) continue;
 
-                double sim = computeSimilarity(i, j, itemVectors);
+                ImmutableSparseVector vectorJ = itemVectors.get(j);
+                double sim = computeSimilarity(vectorI, vectorJ);
                 similarities.set(j, sim);
             }
 
         }
-        Map<Long,List<ScoredId>> nbrhoods ;
 
-        ScoredIds.newListBuilder() ;
+        // build list of score
+        Map<Long,List<ScoredId>> nbrhoods  = new HashMap<Long, List<ScoredId>>();
+        ScoredIdListBuilder scoredIdListBuilder = ScoredIds.newListBuilder();
+        for(Long i : items)
+        {
+            MutableSparseVector similarities = itemSimilarities.get(i);
+            for(VectorEntry entry : similarities.fast()){
+                double similarity = entry.getValue();
+                // keep only positive similarity
+                if(similarity > 0.000001) scoredIdListBuilder.add(entry.getKey(),similarity);
+            }
+            scoredIdListBuilder.sort(ScoreIdComparator);
+            nbrhoods.put(i,scoredIdListBuilder.build() );
+            scoredIdListBuilder.finish();
+        }
+
+
 
         // It will need to be in a map of longs to lists of Scored IDs to store in the model
-        return new SimpleItemItemModel(Collections.EMPTY_MAP);
+        return new SimpleItemItemModel(nbrhoods);
     }
 
-    private double computeSimilarity(Long i, Long j, Map<Long, ImmutableSparseVector> itemVectors) {
-        return 0;  //To change body of created methods use File | Settings | File Templates.
+    private double computeSimilarity(ImmutableSparseVector vectorI, ImmutableSparseVector vectorJ) {
+
+        double dotProduct = vectorI.dot(vectorJ);
+        double normI = vectorI.norm();
+        double normJ = vectorJ.norm();
+        double val = dotProduct/(normI*normJ);
+        double score = dotProduct / (normI*normI);
+        return score;
     }
+
+    // sort descending order
+    public static Comparator<ScoredId> ScoreIdComparator
+            = new Comparator<ScoredId>() {
+        public int compare(ScoredId scored1, ScoredId scored2) {
+            if(scored2.getScore() > scored1.getScore()) return 1;
+            else if(scored2.getScore() < scored1.getScore()) return -1;
+            else return 0;
+        }
+    };
 
     /**
      * Load the data into memory, indexed by item.
@@ -101,6 +131,8 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                 MutableSparseVector vector = RatingVectorUserHistorySummarizer.makeRatingVector(evt).mutableCopy();
                 // vector is now the user's rating vector
                 // TODO Normalize this vector and store the ratings in the item data
+                double normFactor = vector.norm();
+                vector.multiply(1.0/normFactor);
             }
         } finally {
             stream.close();
@@ -114,4 +146,6 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         }
         return itemVectors;
     }
+
+
 }
