@@ -1,6 +1,5 @@
 package edu.umn.cs.recsys.ii;
 
-import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import org.grouplens.lenskit.collections.LongUtils;
@@ -16,10 +15,9 @@ import org.grouplens.lenskit.scored.ScoredIdListBuilder;
 import org.grouplens.lenskit.scored.ScoredIds;
 import org.grouplens.lenskit.vectors.ImmutableSparseVector;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
-import org.grouplens.lenskit.vectors.SparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -31,7 +29,7 @@ import java.util.*;
 public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel> {
     private final ItemDAO itemDao;
     private final UserEventDAO userEventDao;
-    private static final Logger logger = LoggerFactory.getLogger(SimpleItemItemModelBuilder.class);;
+    //private static final Logger logger = LoggerFactory.getLogger(SimpleItemItemModelBuilder.class);
 
     @Inject
     public SimpleItemItemModelBuilder(@Transient ItemDAO idao,
@@ -58,7 +56,7 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
             ImmutableSparseVector vectorI = itemVectors.get(i);
             for(Long j : items)
             {
-                if(i == j) continue;
+                if(i.equals(j)) continue;
 
                 ImmutableSparseVector vectorJ = itemVectors.get(j);
                 double sim = computeSimilarity(vectorI, vectorJ);
@@ -94,9 +92,7 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         double dotProduct = vectorI.dot(vectorJ);
         double normI = vectorI.norm();
         double normJ = vectorJ.norm();
-        double val = dotProduct/(normI*normJ);
-        double score = dotProduct / (normI*normI);
-        return score;
+        return  dotProduct / (normI*normJ);
     }
 
     // sort descending order
@@ -133,6 +129,11 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                 // TODO Normalize this vector and store the ratings in the item data
                 double normFactor = vector.norm();
                 vector.multiply(1.0/normFactor);
+                Long userId = evt.getUserId();
+                Map<Long, Double> map = itemData.get(userId);
+                for(VectorEntry fast : vector.fast()){
+                    map.put(fast.getKey(), fast.getValue());
+                }
             }
         } finally {
             stream.close();
