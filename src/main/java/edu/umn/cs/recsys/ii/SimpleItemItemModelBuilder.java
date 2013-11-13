@@ -16,8 +16,8 @@ import org.grouplens.lenskit.scored.ScoredIds;
 import org.grouplens.lenskit.vectors.ImmutableSparseVector;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -29,7 +29,7 @@ import java.util.*;
 public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel> {
     private final ItemDAO itemDao;
     private final UserEventDAO userEventDao;
-    //private static final Logger logger = LoggerFactory.getLogger(SimpleItemItemModelBuilder.class);
+    private static final Logger logger = LoggerFactory.getLogger(SimpleItemItemModelBuilder.class);
 
     @Inject
     public SimpleItemItemModelBuilder(@Transient ItemDAO idao,
@@ -52,24 +52,28 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         // TODO Compute the similarities between each pair of items
         for(Long i : items)
         {
-            MutableSparseVector similarities = itemSimilarities.get(i);
             ImmutableSparseVector vectorI = itemVectors.get(i);
+            MutableSparseVector similarities = vectorI.mutableCopy();
             for(Long j : items)
             {
                 if(i.equals(j)) continue;
+
+                if(similarities.containsKey(j)== false) continue;
 
                 ImmutableSparseVector vectorJ = itemVectors.get(j);
                 double sim = computeSimilarity(vectorI, vectorJ);
                 similarities.set(j, sim);
             }
-
+            itemSimilarities.put(i, similarities);
         }
 
         // build list of score
         Map<Long,List<ScoredId>> nbrhoods  = new HashMap<Long, List<ScoredId>>();
-        ScoredIdListBuilder scoredIdListBuilder = ScoredIds.newListBuilder();
+        try {
+
         for(Long i : items)
         {
+            ScoredIdListBuilder scoredIdListBuilder = ScoredIds.newListBuilder();
             MutableSparseVector similarities = itemSimilarities.get(i);
             for(VectorEntry entry : similarities.fast()){
                 double similarity = entry.getValue();
@@ -78,10 +82,12 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
             }
             scoredIdListBuilder.sort(ScoreIdComparator);
             nbrhoods.put(i,scoredIdListBuilder.build() );
-            scoredIdListBuilder.finish();
         }
 
-
+        } catch (Exception ex)
+        {
+            logger.debug(ex.toString());
+        }
 
         // It will need to be in a map of longs to lists of Scored IDs to store in the model
         return new SimpleItemItemModel(nbrhoods);
@@ -131,8 +137,11 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                 vector.multiply(1.0/normFactor);
                 Long userId = evt.getUserId();
                 Map<Long, Double> map = itemData.get(userId);
-                for(VectorEntry fast : vector.fast()){
-                    map.put(fast.getKey(), fast.getValue());
+                if(map != null)
+                {
+                    for(VectorEntry fast : vector.fast()){
+                        map.put(fast.getKey(), fast.getValue());
+                    }
                 }
             }
         } finally {

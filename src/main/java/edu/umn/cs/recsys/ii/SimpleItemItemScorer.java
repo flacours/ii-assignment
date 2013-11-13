@@ -11,6 +11,8 @@ import org.grouplens.lenskit.scored.ScoredId;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -23,6 +25,7 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
     private final SimpleItemItemModel model;
     private final UserEventDAO userEvents;
     private final int neighborhoodSize;
+    private static final Logger logger = LoggerFactory.getLogger(SimpleItemItemScorer.class);
 
     @Inject
     public SimpleItemItemScorer(SimpleItemItemModel m, UserEventDAO dao,
@@ -45,7 +48,22 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
         for (VectorEntry e: scores.fast(VectorEntry.State.EITHER)) {
             long item = e.getKey();
             List<ScoredId> neighbors = model.getNeighbors(item);
+            neighbors = neighbors.subList(0, Math.min(neighborhoodSize,neighbors.size()));
+
             // TODO Score this item and save the score into scores
+            logger.info(String.format("item %d : scored : ", item));
+            StringBuilder sb = new StringBuilder();
+            double weightedSum = 0;
+            for(ScoredId scoredId : neighbors)
+            {
+                weightedSum += scoredId.getScore();
+                sb.append(String.format("(%d) = %f,", scoredId.getId(), scoredId.getScore()));
+            }
+            weightedSum /= neighbors.size();
+            sb.append(" score=");
+            sb.append(weightedSum);
+            logger.info(sb.toString());
+            scores.set(item, weightedSum);
         }
     }
 
