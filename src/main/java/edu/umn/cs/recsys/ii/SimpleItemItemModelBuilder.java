@@ -71,18 +71,18 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         Map<Long,List<ScoredId>> nbrhoods  = new HashMap<Long, List<ScoredId>>();
         try {
 
-        for(Long i : items)
-        {
-            ScoredIdListBuilder scoredIdListBuilder = ScoredIds.newListBuilder();
-            MutableSparseVector similarities = itemSimilarities.get(i);
-            for(VectorEntry entry : similarities.fast()){
-                double similarity = entry.getValue();
-                // keep only positive similarity
-                if(similarity > 0.000001) scoredIdListBuilder.add(entry.getKey(),similarity);
+            for(Long i : items)
+            {
+                ScoredIdListBuilder scoredIdListBuilder = ScoredIds.newListBuilder();
+                MutableSparseVector similarities = itemSimilarities.get(i);
+                for(VectorEntry entry : similarities.fast()){
+                    double similarity = entry.getValue();
+                    // keep only positive similarity
+                    if(similarity > 0.000001) scoredIdListBuilder.add(entry.getKey(),similarity);
+                }
+                scoredIdListBuilder.sort(ScoreIdComparator);
+                nbrhoods.put(i,scoredIdListBuilder.build() );
             }
-            scoredIdListBuilder.sort(ScoreIdComparator);
-            nbrhoods.put(i,scoredIdListBuilder.build() );
-        }
 
         } catch (Exception ex)
         {
@@ -102,8 +102,7 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
     }
 
     // sort descending order
-    public static Comparator<ScoredId> ScoreIdComparator
-            = new Comparator<ScoredId>() {
+    public static Comparator<ScoredId> ScoreIdComparator = new Comparator<ScoredId>() {
         public int compare(ScoredId scored1, ScoredId scored2) {
             if(scored2.getScore() > scored1.getScore()) return 1;
             else if(scored2.getScore() < scored1.getScore()) return -1;
@@ -134,14 +133,15 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                 // vector is now the user's rating vector
                 // TODO Normalize this vector and store the ratings in the item data
                 double normFactor = vector.norm();
-                vector.multiply(1.0/normFactor);
                 Long userId = evt.getUserId();
-                Map<Long, Double> map = itemData.get(userId);
-                if(map != null)
-                {
-                    for(VectorEntry fast : vector.fast()){
-                        map.put(fast.getKey(), fast.getValue());
-                    }
+                vector.multiply(1.0/normFactor);
+
+                for(VectorEntry fast : vector.fast()){
+                    long itemId = fast.getKey();
+                    double rating = fast.getValue();
+                    Map<Long, Double> map = itemData.get(itemId);
+                    if(map.containsKey(userId)== false )
+                        map.put(userId, rating);
                 }
             }
         } finally {

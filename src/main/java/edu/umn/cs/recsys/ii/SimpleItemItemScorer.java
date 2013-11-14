@@ -47,23 +47,35 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
 
         for (VectorEntry e: scores.fast(VectorEntry.State.EITHER)) {
             long item = e.getKey();
-            List<ScoredId> neighbors = model.getNeighbors(item);
+            List<ScoredId> neighbors;
+            neighbors = model.getNeighbors(item);
             neighbors = neighbors.subList(0, Math.min(neighborhoodSize,neighbors.size()));
 
             // TODO Score this item and save the score into scores
-            logger.info(String.format("item %d : scored : ", item));
+            logger.info(String.format("item %d : ", item));
             StringBuilder sb = new StringBuilder();
             double weightedSum = 0;
+            int count = 0;
             for(ScoredId scoredId : neighbors)
             {
-                weightedSum += scoredId.getScore();
-                sb.append(String.format("(%d) = %f,", scoredId.getId(), scoredId.getScore()));
+                // get rating
+                if(ratings.containsKey(scoredId.getId()))
+                {
+                    count++;
+                    double rating = ratings.get(scoredId.getId());
+                    weightedSum += scoredId.getScore() * rating;
+                    sb.append(String.format("(%d) = %f,", scoredId.getId(), scoredId.getScore()));
+                }
             }
-            weightedSum /= neighbors.size();
-            sb.append(" score=");
-            sb.append(weightedSum);
-            logger.info(sb.toString());
-            scores.set(item, weightedSum);
+            if(count > 0)
+            {
+                weightedSum /= count;
+                sb.append(" score=");
+                sb.append(weightedSum);
+                sb.append("\n");
+                logger.info(sb.toString());
+                scores.set(item, weightedSum);
+            }
         }
     }
 
