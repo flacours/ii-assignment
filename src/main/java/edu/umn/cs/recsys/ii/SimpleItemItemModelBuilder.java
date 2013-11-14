@@ -10,6 +10,7 @@ import org.grouplens.lenskit.data.dao.UserEventDAO;
 import org.grouplens.lenskit.data.event.Event;
 import org.grouplens.lenskit.data.history.RatingVectorUserHistorySummarizer;
 import org.grouplens.lenskit.data.history.UserHistory;
+import org.grouplens.lenskit.scored.PackedScoredIdList;
 import org.grouplens.lenskit.scored.ScoredId;
 import org.grouplens.lenskit.scored.ScoredIdListBuilder;
 import org.grouplens.lenskit.scored.ScoredIds;
@@ -78,10 +79,12 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                 for(VectorEntry entry : similarities.fast()){
                     double similarity = entry.getValue();
                     // keep only positive similarity
-                    if(similarity > 0.000001) scoredIdListBuilder.add(entry.getKey(),similarity);
+                    if(similarity > 0.000001)
+                        scoredIdListBuilder.add(entry.getKey(),similarity);
                 }
                 scoredIdListBuilder.sort(ScoreIdComparator);
-                nbrhoods.put(i,scoredIdListBuilder.build() );
+                PackedScoredIdList scoredIds = scoredIdListBuilder.build();
+                nbrhoods.put(i,scoredIds);
             }
 
         } catch (Exception ex)
@@ -131,18 +134,31 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
             for (UserHistory<Event> evt: stream) {
                 MutableSparseVector vector = RatingVectorUserHistorySummarizer.makeRatingVector(evt).mutableCopy();
                 // vector is now the user's rating vector
-                // TODO Normalize this vector and store the ratings in the item data
-                double normFactor = vector.norm();
-                Long userId = evt.getUserId();
-                vector.multiply(1.0/normFactor);
 
+                // Subtract the user's mean rating from each rating prior to computing similarities
+                double meanRating = computeMeanRating(vector);
+                Long userId = evt.getUserId();
                 for(VectorEntry fast : vector.fast()){
                     long itemId = fast.getKey();
                     double rating = fast.getValue();
+                    rating -= meanRating;
+                    //if(rating < 0) rating = 0;
                     Map<Long, Double> map = itemData.get(itemId);
                     if(map.containsKey(userId)== false )
                         map.put(userId, rating);
                 }
+
+                // TODO Normalize this vector and store the ratings in the item data
+//                double normFactor = vector.norm();
+//
+//                vector.multiply(1.0/normFactor);
+//                for(VectorEntry fast : vector.fast()){
+//                    long itemId = fast.getKey();
+//                    double rating = fast.getValue();
+//                    Map<Long, Double> map = itemData.get(itemId);
+//                    if(map.containsKey(userId)== false )
+//                        map.put(userId, rating);
+//                }
             }
         } finally {
             stream.close();
@@ -155,6 +171,18 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
             itemVectors.put(entry.getKey(), vec.immutable());
         }
         return itemVectors;
+    }
+
+    private double computeMeanRating(MutableSparseVector vector) {
+
+        double sum = 0;
+        double count = 0;
+        for(VectorEntry fast : vector.fast()){
+            double rating = fast.getValue();
+            count++;
+            sum+= rating;
+        }
+        return sum/count;  //To change body of created methods use File | Settings | File Templates.
     }
 
 

@@ -56,6 +56,7 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
             StringBuilder sb = new StringBuilder();
             double weightedSum = 0;
             int count = 0;
+            double sumSim = 0.0;
             for(ScoredId scoredId : neighbors)
             {
                 // get rating
@@ -63,18 +64,19 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
                 {
                     count++;
                     double rating = ratings.get(scoredId.getId());
-                    weightedSum += scoredId.getScore() * rating;
-                    sb.append(String.format("(%d) = %f,", scoredId.getId(), scoredId.getScore()));
+                    double sim = scoredId.getScore();
+                    weightedSum += rating * sim;
+                    sumSim += Math.abs(sim);
+                    sb.append(String.format("(%d) = %f,%f", scoredId.getId(), scoredId.getScore(),rating));
                 }
             }
             if(count > 0)
             {
-                weightedSum /= count;
-                sb.append(" score=");
-                sb.append(weightedSum);
-                sb.append("\n");
+                double score = weightedSum / sumSim;
+
+                sb.append(String.format("\nscore=%f  %f/%f %d", score, weightedSum, sumSim, count));
                 logger.info(sb.toString());
-                scores.set(item, weightedSum);
+                scores.set(item, score);
             }
         }
     }
