@@ -17,6 +17,7 @@ import org.grouplens.lenskit.scored.ScoredIds;
 import org.grouplens.lenskit.vectors.ImmutableSparseVector;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
+import org.grouplens.lenskit.vectors.similarity.CosineVectorSimilarity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,10 +99,14 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
 
     private double computeSimilarity(ImmutableSparseVector vectorI, ImmutableSparseVector vectorJ) {
 
+
+        CosineVectorSimilarity similarity = new CosineVectorSimilarity();
+        double val = similarity.similarity(vectorI, vectorJ);
         double dotProduct = vectorI.dot(vectorJ);
         double normI = vectorI.norm();
         double normJ = vectorJ.norm();
-        return  dotProduct / (normI*normJ);
+        double val2 = dotProduct / (normI*normJ);
+        return val;
     }
 
     // sort descending order
