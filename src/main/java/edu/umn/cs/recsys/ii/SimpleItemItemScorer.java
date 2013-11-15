@@ -53,7 +53,7 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
 
             // TODO Score this item and save the score into scores
             // debug loop to print similarity
-            PrintSimilarity(item, neighbors);
+            //PrintSimilarity(item, neighbors);
 
             double weightedSum = 0;
             int count = 0;
@@ -74,7 +74,7 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
             if(count > 0)
             {
                 double score = weightedSum / sumSim;
-                logger.info(String.format("\nscore=%f  %f/%f %d", score, weightedSum, sumSim, count));
+                logger.debug(String.format("\nscore=%f  %f/%f %d", score, weightedSum, sumSim, count));
                 scores.set(item, score);
             }
         }

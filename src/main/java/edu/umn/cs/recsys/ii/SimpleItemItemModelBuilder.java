@@ -71,7 +71,7 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
 
                     ImmutableSparseVector vectorJ = itemVectors.get(j);
                     double sim = computeSimilarity(vectorI, vectorJ);
-                    if(i==77) logger.info(String.format("sim[%d,%d]=%f",i,j,sim ));
+                    if(i==77) logger.debug(String.format("sim[%d,%d]=%f",i,j,sim ));
                     if(sim > 0.000001)
                         scoredIdListBuilder.add(j,sim);
                     //similarities.set(j, sim);
