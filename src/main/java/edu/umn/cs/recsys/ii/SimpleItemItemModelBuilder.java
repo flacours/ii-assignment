@@ -52,24 +52,43 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         Map<Long,MutableSparseVector> itemSimilarities = new HashMap<Long, MutableSparseVector>();
 
         // TODO Compute the similarities between each pair of items
+        // build matrix
+
+
+        Map<Long,List<ScoredId>> nbrhoods  = new HashMap<Long, List<ScoredId>>();
         for(Long i : items)
         {
             ImmutableSparseVector vectorI = itemVectors.get(i);
-            MutableSparseVector similarities = vectorI.mutableCopy();
+            if(i==77)
+                logger.info("i==7");;
+            //MutableSparseVector similarities = itemSimilarities.get(i);
+            ScoredIdListBuilder scoredIdListBuilder = ScoredIds.newListBuilder();
             for(Long j : items)
             {
                 if(i.equals(j)) continue;
 
-                if(similarities.containsKey(j)== false) continue;
+                try {
 
-                ImmutableSparseVector vectorJ = itemVectors.get(j);
-                double sim = computeSimilarity(vectorI, vectorJ);
-                similarities.set(j, sim);
+                    ImmutableSparseVector vectorJ = itemVectors.get(j);
+                    double sim = computeSimilarity(vectorI, vectorJ);
+                    if(i==77) logger.info(String.format("sim[%d,%d]=%f",i,j,sim ));
+                    if(sim > 0.000001)
+                        scoredIdListBuilder.add(j,sim);
+                    //similarities.set(j, sim);
+                }
+                catch (Exception ex)
+                {
+                    logger.info("exception " + ex.getMessage());
+                }
             }
-            itemSimilarities.put(i, similarities);
+            scoredIdListBuilder.sort(ScoreIdComparator);
+            PackedScoredIdList scoredIds = scoredIdListBuilder.build();
+            nbrhoods.put(i,scoredIds);
+
         }
 
         // build list of score
+/*
         Map<Long,List<ScoredId>> nbrhoods  = new HashMap<Long, List<ScoredId>>();
         try {
 
@@ -82,6 +101,9 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
                     // keep only positive similarity
                     if(similarity > 0.000001)
                         scoredIdListBuilder.add(entry.getKey(),similarity);
+                    if(i == 77) {
+                        logger.info(String.format("neighborr of 77 : (%d, %f)", entry.getKey(), entry.getValue())) ;
+                    }
                 }
                 scoredIdListBuilder.sort(ScoreIdComparator);
                 PackedScoredIdList scoredIds = scoredIdListBuilder.build();
@@ -92,6 +114,7 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
         {
             logger.debug(ex.toString());
         }
+*/
 
         // It will need to be in a map of longs to lists of Scored IDs to store in the model
         return new SimpleItemItemModel(nbrhoods);
@@ -102,10 +125,11 @@ public class SimpleItemItemModelBuilder implements Provider<SimpleItemItemModel>
 
         CosineVectorSimilarity similarity = new CosineVectorSimilarity();
         double val = similarity.similarity(vectorI, vectorJ);
-        double dotProduct = vectorI.dot(vectorJ);
-        double normI = vectorI.norm();
-        double normJ = vectorJ.norm();
-        double val2 = dotProduct / (normI*normJ);
+        // TODO old code
+//        double dotProduct = vectorI.dot(vectorJ);
+//        double normI = vectorI.norm();
+//        double normJ = vectorJ.norm();
+//        double val2 = dotProduct / (normI*normJ);
         return val;
     }
 

@@ -49,35 +49,43 @@ public class SimpleItemItemScorer extends AbstractItemScorer {
             long item = e.getKey();
             List<ScoredId> neighbors;
             neighbors = model.getNeighbors(item);
-            neighbors = neighbors.subList(0, Math.min(neighborhoodSize,neighbors.size()));
+            //neighbors = neighbors.subList(0, Math.min(neighborhoodSize,neighbors.size()));
 
             // TODO Score this item and save the score into scores
-            logger.info(String.format("item %d : ", item));
-            StringBuilder sb = new StringBuilder();
+            // debug loop to print similarity
+            PrintSimilarity(item, neighbors);
+
             double weightedSum = 0;
             int count = 0;
             double sumSim = 0.0;
             for(ScoredId scoredId : neighbors)
             {
+                if(count == neighborhoodSize) break;
                 // get rating
                 if(ratings.containsKey(scoredId.getId()))
                 {
                     count++;
                     double rating = ratings.get(scoredId.getId());
-                    double sim = scoredId.getScore();
-                    weightedSum += rating * sim;
+                    double sim = scoredId.getScore() ;
+                    weightedSum += rating * sim ;
                     sumSim += Math.abs(sim);
-                    sb.append(String.format("(%d) = %f,%f", scoredId.getId(), scoredId.getScore(),rating));
                 }
             }
             if(count > 0)
             {
                 double score = weightedSum / sumSim;
-
-                sb.append(String.format("\nscore=%f  %f/%f %d", score, weightedSum, sumSim, count));
-                logger.info(sb.toString());
+                logger.info(String.format("\nscore=%f  %f/%f %d", score, weightedSum, sumSim, count));
                 scores.set(item, score);
             }
+        }
+    }
+
+    private void PrintSimilarity(long item, List<ScoredId> neighbors) {
+        logger.info(String.format("item %d : ", item));
+        for(ScoredId scoredId : neighbors)
+        {
+            // get rating
+                logger.info(String.format("Item ID: %d Similarity: %f", scoredId.getId(), scoredId.getScore()));
         }
     }
 
