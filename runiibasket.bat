@@ -1,3 +1,3 @@
 ECHO OFF
 REM target\bin\run-ii --basket 77 680
-target\bin\run-ii --basket 121 2024 2502 1892 603 807 680 36657 105 121 854 2164 1422 640 745 275 9331 238 809 107 640 153 550 268 275
+target\bin\run-ii --basket 8358 1637

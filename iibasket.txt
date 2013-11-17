@@ -1,7 +1,5 @@
-
-C:\Users\lacoursf.TIBURONINC\Documents\GitHub\ii-assignment>ECHO OFF 
-278,2.8766,The Shawshank Redemption (1994)
-629,2.5265,The Usual Suspects (1995)
-155,2.2595,The Dark Knight (2008)
-274,2.2298,The Silence of the Lambs (1991)
-424,2.1825,Schindler's List (1993)
+664,0.3516,Twister (1996)
+955,0.3010,Mission: Impossible II (2000)
+414,0.2912,Batman Forever (1995)
+4327,0.2899,Charlie's Angels (2000)
+788,0.2611,Mrs. Doubtfire (1993)
